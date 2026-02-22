@@ -5,13 +5,13 @@ import type { RapierRigidBody } from '@react-three/rapier'
 import { Euler, MathUtils } from 'three'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useGameStore } from '../stores/gameStore'
-import { playerRef, respawnPoint } from './playerShared'
+import { playerRef, respawnPoint, playerForward } from './playerShared'
+import { movingPlatformVelocities } from './platformRegistry'
 
-const WALK_SPEED = 6
-const SPRINT_SPEED = 10.5
-const JUMP_VELOCITY = 9.5
-const COYOTE_TIME = 0.13
-const JUMP_BUFFER = 0.2
+const WALK_SPEED = 4.5
+const SPRINT_SPEED = 8.5
+const JUMP_VELOCITY = 7
+const JUMP_BUFFER = 0.21
 const EYE_HEIGHT = 0.75
 
 interface PlayerControllerProps {
@@ -31,9 +31,13 @@ export function PlayerController({
   // Camera euler stored as ref to avoid React re-renders every frame
   const euler = useRef(new Euler(0, 0, 0, 'YXZ'))
   const isGrounded = useRef(false)
-  const coyoteTimer = useRef(0)
   const jumpBuffer = useRef(0)
   const canJump = useRef(true)
+  // Set to true the moment a jump fires; cleared only once the raycast
+  // confirms the player has actually left the ground (isGrounded → false).
+  // This means canJump cannot reset until physical ground contact is broken
+  // and then re-established — no timer, no arbitrary window.
+  const jumpPending = useRef(false)
   const isLocked = useRef(false)
 
   // Share body ref globally for goal/checkpoint detection
@@ -100,14 +104,18 @@ export function PlayerController({
       { x: 0, y: -1, z: 0 }
     )
     const hit = world.castRay(ray, 1.15, false)
-    const wasGrounded = isGrounded.current
     isGrounded.current = hit !== null && hit.timeOfImpact < 1.08
 
-    // Coyote time: short grace window after leaving a ledge
-    if (wasGrounded && !isGrounded.current) {
-      coyoteTimer.current = COYOTE_TIME
-    } else if (!isGrounded.current) {
-      coyoteTimer.current = Math.max(0, coyoteTimer.current - delta)
+    // Once the player has physically left the ground after a jump, the
+    // pending flag is cleared — no timer, purely contact-driven.
+    if (jumpPending.current && !isGrounded.current) {
+      jumpPending.current = false
+    }
+
+    // Allow another jump only when the hitbox is in contact with the ground
+    // AND the previous jump has fully resolved (player was airborne).
+    if (isGrounded.current && !jumpPending.current) {
+      canJump.current = true
     }
 
     // Jump buffer: jump input registered slightly before landing
@@ -117,9 +125,8 @@ export function PlayerController({
       jumpBuffer.current = Math.max(0, jumpBuffer.current - delta)
     }
 
-    if (isGrounded.current && !keys.current.jump) {
-      canJump.current = true
-    }
+    // Read current velocity before any overrides (used for vy continuity)
+    const linvel = body.linvel()
 
     // ── Horizontal movement ──────────────────────────────────────────
     const yaw = euler.current.y
@@ -135,17 +142,31 @@ export function PlayerController({
       vz = (vz / len) * speed
     }
 
+    // ── Moving platform carriage (friction) ─────────────────────────
+    // When grounded on a moving platform, add the platform's velocity so
+    // the player travels with it instead of sliding off.
+    if (isGrounded.current && hit) {
+      const parentHandle = hit.collider.parent()
+      if (parentHandle !== undefined) {
+        const platVel = movingPlatformVelocities.get(
+          typeof parentHandle === 'number' ? parentHandle : (parentHandle as { handle: number }).handle
+        )
+        if (platVel) {
+          vx += platVel[0]
+          vz += platVel[2]
+        }
+      }
+    }
+
     // ── Vertical velocity ────────────────────────────────────────────
-    const linvel = body.linvel()
     let vy = linvel.y
 
-    const canJumpNow =
-      canJump.current && (isGrounded.current || coyoteTimer.current > 0)
+    const canJumpNow = canJump.current && isGrounded.current
     if (jumpBuffer.current > 0 && canJumpNow) {
       vy = JUMP_VELOCITY
       jumpBuffer.current = 0
-      coyoteTimer.current = 0
       canJump.current = false
+      jumpPending.current = true  // wait for ground contact to break before re-arming
     }
 
     // Terminal velocity
@@ -157,6 +178,10 @@ export function PlayerController({
     const t = body.translation()
     camera.position.set(t.x, t.y + EYE_HEIGHT, t.z)
     camera.rotation.copy(euler.current)
+
+    // Publish facing direction so mobs/sword can read it
+    playerForward.x = -Math.sin(euler.current.y)
+    playerForward.z = -Math.cos(euler.current.y)
 
     // ── Respawn on fall ──────────────────────────────────────────────
     if (t.y < -20) {

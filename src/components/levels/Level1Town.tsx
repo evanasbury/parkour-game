@@ -1,9 +1,13 @@
 import { Platform } from '../../objects/obstacles/Platform'
 import { MovingPlatform } from '../../objects/obstacles/MovingPlatform'
+import { KillZone } from '../../objects/obstacles/KillZone'
 import { Building } from '../../objects/environment/Building'
+import { Clouds } from '../../objects/environment/Clouds'
 import { RigidBody } from '@react-three/rapier'
 import { Checkpoint } from '../Checkpoint'
 import { Goal } from '../Goal'
+import { Mob } from '../../objects/enemies/Mob'
+import { SwordPickup } from '../../objects/items/SwordPickup'
 
 // Decorative laundry line
 function LaundryLine({
@@ -35,13 +39,13 @@ export function Level1Town() {
   return (
     <group>
       {/* ── Ambient atmosphere ──────────────────────────── */}
-      <fog attach="fog" args={['#FFCC80', 30, 120]} />
-      <color attach="background" args={['#FFCC80']} />
-      <ambientLight intensity={0.7} color="#FFE0B2" />
+      <fog attach="fog" args={['#FFE0B2', 40, 140]} />
+      <color attach="background" args={['#FFE0B2']} />
+      <ambientLight intensity={1.1} color="#FFF8E1" />
       <directionalLight
         position={[15, 25, 10]}
-        intensity={1.4}
-        color="#FFF3E0"
+        intensity={2.0}
+        color="#FFFDE7"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-far={120}
@@ -50,6 +54,9 @@ export function Level1Town() {
         shadow-camera-top={60}
         shadow-camera-bottom={-60}
       />
+
+      {/* ── Clouds ──────────────────────────────────────── */}
+      <Clouds y={30} />
 
       {/* ── Ground ──────────────────────────────────────── */}
       <RigidBody type="fixed">
@@ -102,11 +109,20 @@ export function Level1Town() {
       <Platform position={[2, 7, 15]}    size={[5, 0.5, 5]} color="#FF8F00" />
       <Checkpoint id={0} position={[2, 7.8, 15]} />
 
+      {/* ── Lava pits below elevated rooftop sections ────── */}
+      {/* Covers the street below sections 3 & 4 (Z 12→44) */}
+      <KillZone
+        position={[0, 0.5, 28]}
+        size={[20, 1.5, 32]}
+        color="#8B0000"
+        emissiveColor="#FF4500"
+      />
+
       {/* ── SECTION 3: Moving platforms & gaps ──────────── */}
       <MovingPlatform
         startPos={[0, 7.5, 19]}
         endPos={[6, 7.5, 19]}
-        speed={1.0}
+        speed={0.45}
         size={[3, 0.5, 3]}
         color="#5D4037"
       />
@@ -118,13 +134,45 @@ export function Level1Town() {
       <MovingPlatform
         startPos={[0, 9.5, 33]}
         endPos={[0, 12, 33]}
-        speed={0.8}
+        speed={0.4}
         size={[3.5, 0.5, 3.5]}
         color="#4E342E"
       />
       {/* Final ledge */}
       <Platform position={[0, 12, 37]}   size={[7, 0.5, 3]} color="#3E2723" />
       <Platform position={[0, 12, 41]}   size={[7, 0.5, 3]} color="#3E2723" />
+
+      {/* ── SWORD — on the first rooftop (grab it before the mobs!) ── */}
+      <SwordPickup position={[8, 6.8, 2]} />
+
+      {/* ── MOBS ────────────────────────────────────────── */}
+      {/* Bandit 1 — patrols the checkpoint platform */}
+      <Mob
+        id="l1-mob-0"
+        position={[2, 7.5, 15]}
+        patrolA={[-1, 7.5, 15]}
+        patrolB={[5, 7.5, 15]}
+        speed={0.9}
+        color="#5D1A1A"
+      />
+      {/* Bandit 2 — guards the mid-gap platform */}
+      <Mob
+        id="l1-mob-1"
+        position={[6, 8.5, 23]}
+        patrolA={[5, 8.5, 22]}
+        patrolB={[7, 8.5, 24]}
+        speed={1.0}
+        color="#5D1A1A"
+      />
+      {/* Bandit 3 — patrols the final ledge in front of the goal */}
+      <Mob
+        id="l1-mob-2"
+        position={[0, 12.5, 41]}
+        patrolA={[-2, 12.5, 41]}
+        patrolB={[2, 12.5, 41]}
+        speed={1.1}
+        color="#7A2020"
+      />
 
       {/* ── GOAL ────────────────────────────────────────── */}
       <Goal position={[0, 12.8, 43]} />

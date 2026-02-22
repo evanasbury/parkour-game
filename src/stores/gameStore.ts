@@ -7,6 +7,8 @@ interface GameState {
   checkpointsReached: number[]
   startTime: number
   elapsedTime: number
+  hasSword: boolean
+  deadMobs: string[]
 
   startGame: () => void
   pauseGame: () => void
@@ -16,6 +18,8 @@ interface GameState {
   reachCheckpoint: (id: number) => void
   resetToMenu: () => void
   tick: (now: number) => void
+  pickedUpSword: () => void
+  killMob: (id: string) => void
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -24,6 +28,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   checkpointsReached: [],
   startTime: 0,
   elapsedTime: 0,
+  hasSword: false,
+  deadMobs: [],
 
   startGame: () =>
     set({
@@ -32,6 +38,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       checkpointsReached: [],
       startTime: Date.now(),
       elapsedTime: 0,
+      hasSword: false,
+      deadMobs: [],
     }),
 
   pauseGame: () => set({ phase: 'paused' }),
@@ -53,6 +61,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       checkpointsReached: [],
       startTime: Date.now(),
       elapsedTime: 0,
+      hasSword: false,
+      deadMobs: [],
     })),
 
   reachCheckpoint: (id) =>
@@ -67,7 +77,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentLevel: 1,
       checkpointsReached: [],
       elapsedTime: 0,
+      hasSword: false,
+      deadMobs: [],
     }),
+
+  pickedUpSword: () => set({ hasSword: true }),
+
+  killMob: (id) =>
+    set((state) => ({
+      deadMobs: state.deadMobs.includes(id)
+        ? state.deadMobs
+        : [...state.deadMobs, id],
+    })),
 
   tick: (now) => {
     const { phase, startTime } = get()

@@ -1,10 +1,14 @@
 import { Platform } from '../../objects/obstacles/Platform'
 import { MovingPlatform } from '../../objects/obstacles/MovingPlatform'
+import { KillZone } from '../../objects/obstacles/KillZone'
 import { Tree } from '../../objects/environment/Tree'
 import { Rock } from '../../objects/environment/Rock'
+import { Clouds } from '../../objects/environment/Clouds'
 import { RigidBody } from '@react-three/rapier'
 import { Checkpoint } from '../Checkpoint'
 import { Goal } from '../Goal'
+import { Mob } from '../../objects/enemies/Mob'
+import { SwordPickup } from '../../objects/items/SwordPickup'
 
 function Bridge({
   position,
@@ -44,13 +48,13 @@ export function Level2Mountains() {
   return (
     <group>
       {/* ── Sky & atmosphere ───────────────────────────── */}
-      <fog attach="fog" args={['#B3D9F7', 40, 160]} />
-      <color attach="background" args={['#B3D9F7']} />
-      <ambientLight intensity={0.65} color="#E1F5FE" />
+      <fog attach="fog" args={['#C9E8FF', 50, 180]} />
+      <color attach="background" args={['#87CEEB']} />
+      <ambientLight intensity={1.1} color="#E1F5FE" />
       <directionalLight
         position={[20, 40, 5]}
-        intensity={1.6}
-        color="#FFFFFF"
+        intensity={2.2}
+        color="#FFFDE7"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-far={160}
@@ -59,6 +63,9 @@ export function Level2Mountains() {
         shadow-camera-top={80}
         shadow-camera-bottom={-80}
       />
+
+      {/* ── Clouds ─────────────────────────────────────── */}
+      <Clouds y={40} />
 
       {/* ── Ground / Base terrain ──────────────────────── */}
       <RigidBody type="fixed">
@@ -105,6 +112,28 @@ export function Level2Mountains() {
         </mesh>
       </RigidBody>
 
+      {/* ── Lava in the volcanic gorge (below bridge) ──── */}
+      <KillZone
+        position={[0, 0.5, 10]}
+        size={[40, 1.5, 12]}
+        color="#8B0000"
+        emissiveColor="#FF4500"
+      />
+      {/* Lava below the moving platform section */}
+      <KillZone
+        position={[4, 0.5, 38]}
+        size={[30, 1.5, 18]}
+        color="#8B0000"
+        emissiveColor="#FF4500"
+      />
+      {/* Lava below the summit climb */}
+      <KillZone
+        position={[0, 0.5, 52]}
+        size={[20, 1.5, 20]}
+        color="#8B0000"
+        emissiveColor="#FF4500"
+      />
+
       {/* ── Bridge over gorge ──────────────────────────── */}
       <Bridge position={[0, 8, 10]} length={10} color="#6D4C41" />
 
@@ -122,14 +151,14 @@ export function Level2Mountains() {
       <MovingPlatform
         startPos={[0, 15, 35]}
         endPos={[7, 15, 35]}
-        speed={1.3}
+        speed={0.5}
         size={[3, 0.6, 3]}
         color={darkRock}
       />
       <MovingPlatform
         startPos={[7, 16.5, 39]}
         endPos={[7, 16.5, 43]}
-        speed={1.1}
+        speed={0.45}
         size={[3, 0.6, 3]}
         color={rockGray}
       />
@@ -147,6 +176,38 @@ export function Level2Mountains() {
         <boxGeometry args={[6, 0.3, 4]} />
         <meshToonMaterial color="#E3F2FD" />
       </mesh>
+
+      {/* ── SWORD — on the first cliff ledge (grab it early!) ── */}
+      <SwordPickup position={[0, 9.2, 4]} />
+
+      {/* ── MOBS ─────────────────────────────────────────── */}
+      {/* Troll 1 — patrols the second cliff section */}
+      <Mob
+        id="l2-mob-0"
+        position={[0, 8.6, 16]}
+        patrolA={[-2, 8.6, 16]}
+        patrolB={[2, 8.6, 16]}
+        speed={0.85}
+        color="#3A5A3A"
+      />
+      {/* Troll 2 — guards the rocky platform before the checkpoint */}
+      <Mob
+        id="l2-mob-1"
+        position={[3, 13.1, 27]}
+        patrolA={[2, 13.1, 26]}
+        patrolB={[4, 13.1, 28]}
+        speed={1.0}
+        color="#2E4A2E"
+      />
+      {/* Troll 3 — defends the mountain peak / goal */}
+      <Mob
+        id="l2-mob-2"
+        position={[0, 24.1, 60]}
+        patrolA={[-2, 24.1, 59]}
+        patrolB={[2, 24.1, 61]}
+        speed={1.2}
+        color="#1E3A1E"
+      />
 
       {/* ── GOAL ──────────────────────────────────────── */}
       <Goal position={[0, 24.4, 60]} />

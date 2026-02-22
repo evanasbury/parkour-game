@@ -10,6 +10,8 @@ import { HUD } from './UI/HUD'
 import { PauseMenu } from './UI/PauseMenu'
 import { LevelComplete } from './UI/LevelComplete'
 import { WinScreen } from './UI/WinScreen'
+import { PlayerHand } from './UI/PlayerHand'
+import { lastAttackTime } from '../systems/playerShared'
 
 /** Inner 3-D scene — runs inside <Canvas> */
 function GameScene() {
@@ -38,6 +40,10 @@ export function Game() {
   const handleClick = () => {
     if (phase === 'playing') {
       window.dispatchEvent(new Event('game:lock'))
+      // Sword attack — stamp the timestamp so mobs can detect it this frame
+      if (useGameStore.getState().hasSword) {
+        lastAttackTime.current = performance.now()
+      }
     }
   }
 
@@ -47,13 +53,15 @@ export function Game() {
         shadows
         camera={{ fov: 75, near: 0.1, far: 500 }}
         onClick={handleClick}
-        style={{ display: 'block', background: '#000' }}
+        style={{ display: 'block' }}
+        onCreated={({ gl }) => gl.setClearColor('#87CEEB')}
       >
         <GameScene />
       </Canvas>
 
       {/* HTML overlays layered on top of the canvas */}
       {(phase === 'playing' || phase === 'paused') && <HUD />}
+      {phase === 'playing' && <PlayerHand />}
       {phase === 'paused' && <PauseMenu />}
       {phase === 'levelComplete' && <LevelComplete />}
       {phase === 'win' && <WinScreen />}

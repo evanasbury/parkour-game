@@ -1,8 +1,12 @@
 import { Platform } from '../../objects/obstacles/Platform'
 import { MovingPlatform } from '../../objects/obstacles/MovingPlatform'
+import { KillZone } from '../../objects/obstacles/KillZone'
+import { Clouds } from '../../objects/environment/Clouds'
 import { RigidBody } from '@react-three/rapier'
 import { Checkpoint } from '../Checkpoint'
 import { Goal } from '../Goal'
+import { Mob } from '../../objects/enemies/Mob'
+import { SwordPickup } from '../../objects/items/SwordPickup'
 
 const STONE = '#90A4AE'
 const DARK_STONE = '#546E7A'
@@ -99,14 +103,14 @@ function Flag({
 export function Level3Castle() {
   return (
     <group>
-      {/* ── Dramatic purple sky ────────────────────────── */}
-      <fog attach="fog" args={['#7B1FA2', 50, 200]} />
-      <color attach="background" args={['#4A148C']} />
-      <ambientLight intensity={0.55} color="#CE93D8" />
+      {/* ── Bright daytime sky ─────────────────────────── */}
+      <fog attach="fog" args={['#C9E8FF', 60, 250]} />
+      <color attach="background" args={['#87CEEB']} />
+      <ambientLight intensity={1.1} color="#FFFDE7" />
       <directionalLight
         position={[30, 50, -10]}
-        intensity={1.8}
-        color="#F3E5F5"
+        intensity={2.4}
+        color="#FFFDE7"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-far={200}
@@ -115,8 +119,11 @@ export function Level3Castle() {
         shadow-camera-top={100}
         shadow-camera-bottom={-100}
       />
-      {/* Mystical purple fill light */}
-      <pointLight position={[0, 30, 0]} color="#9C27B0" intensity={2} distance={80} decay={1} />
+      {/* Warm fill from opposite side */}
+      <pointLight position={[0, 30, 0]} color="#FFD700" intensity={1.2} distance={100} decay={1} />
+
+      {/* ── Clouds ─────────────────────────────────────── */}
+      <Clouds y={55} />
 
       {/* ── Ground / Courtyard ────────────────────────── */}
       <RigidBody type="fixed">
@@ -149,6 +156,29 @@ export function Level3Castle() {
       {/* Flags on corner towers */}
       <Flag position={[-20, 14, -28]} color="#1565C0" />
       <Flag position={[20, 14, -28]}  color="#1565C0" />
+
+      {/* ── Void kill zones below elevated sections ───── */}
+      {/* Below the outer battlement walk (narrow wall at X -20) */}
+      <KillZone
+        position={[-20, 0.5, 2]}
+        size={[6, 1.5, 32]}
+        color="#1A0033"
+        emissiveColor="#6A0DAD"
+      />
+      {/* Below the tower bridge and tower-hop section */}
+      <KillZone
+        position={[-11, 0.5, 3]}
+        size={[20, 1.5, 10]}
+        color="#1A0033"
+        emissiveColor="#6A0DAD"
+      />
+      {/* Below the inner keep approach (sections 3 & 4) */}
+      <KillZone
+        position={[0, 0.5, 28]}
+        size={[16, 1.5, 22]}
+        color="#1A0033"
+        emissiveColor="#6A0DAD"
+      />
 
       {/* ── GATEHOUSE — first obstacle ─────────────────── */}
       {/* Gate arch left pillar */}
@@ -207,7 +237,7 @@ export function Level3Castle() {
       <MovingPlatform
         startPos={[-2, 17.5, 18]}
         endPos={[6, 17.5, 18]}
-        speed={1.2}
+        speed={0.45}
         size={[3, 0.5, 3]}
         color={DARK_STONE}
       />
@@ -231,7 +261,7 @@ export function Level3Castle() {
       <MovingPlatform
         startPos={[-5.5, 31, 24]}
         endPos={[-5.5, 31, 28]}
-        speed={1.0}
+        speed={0.4}
         size={[3, 0.5, 3]}
         color={ACCENT_GOLD}
       />
@@ -239,12 +269,44 @@ export function Level3Castle() {
       {/* ── KEEP ROOFTOP ──────────────────────────────── */}
       {/* The flat top of the keep tower (part of the Tower component) */}
 
+      {/* ── SWORD — atop the gatehouse staircase ──────── */}
+      <SwordPickup position={[-4, 9.9, -22]} />
+
+      {/* ── MOBS ──────────────────────────────────────── */}
+      {/* Undead knight 1 — patrols the outer battlement walk */}
+      <Mob
+        id="l3-mob-0"
+        position={[-20, 10.1, 0]}
+        patrolA={[-20, 10.1, -6]}
+        patrolB={[-20, 10.1, 6]}
+        speed={0.8}
+        color="#1A2A4A"
+      />
+      {/* Undead knight 2 — guards the tower bridge */}
+      <Mob
+        id="l3-mob-1"
+        position={[-12, 11.5, 3]}
+        patrolA={[-14, 11.5, 3]}
+        patrolB={[-10, 11.5, 3]}
+        speed={1.0}
+        color="#1A2A4A"
+      />
+      {/* Undead knight 3 — defends the keep rooftop / goal */}
+      <Mob
+        id="l3-mob-2"
+        position={[0, 32.1, 26]}
+        patrolA={[-2, 32.1, 25]}
+        patrolB={[2, 32.1, 27]}
+        speed={1.1}
+        color="#0D1A33"
+      />
+
       {/* ── GOAL — top of the keep! ───────────────────── */}
       <Goal position={[0, 33, 28]} />
 
-      {/* Extra mystical glow effects */}
-      <pointLight position={[0, 33, 28]} color="#9C27B0" intensity={10} distance={20} decay={2} />
-      <pointLight position={[0, 15, 0]}  color="#3F51B5" intensity={3} distance={30} decay={1} />
+      {/* Goal glow — warm golden light at the top */}
+      <pointLight position={[0, 33, 28]} color="#FFD700" intensity={8} distance={20} decay={2} />
+      <pointLight position={[0, 15, 0]}  color="#FFF9C4" intensity={2} distance={40} decay={1} />
     </group>
   )
 }
